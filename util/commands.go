@@ -65,7 +65,7 @@ type InteractionOptions struct {
 
 // CommandInteraction structure for a discord slash
 // command interaction
-type CommandInteractionData struct {
+type InteractionData struct {
 	ID      string               `json:"id"`
 	Name    string               `json:"name"`
 	Type    int                  `json:"type"`
@@ -73,11 +73,11 @@ type CommandInteractionData struct {
 }
 
 type SlashCommandPayload struct {
-	Type   int                    `json:"type"`
-	Token  string                 `json:"token"`
-	Member SlashCommandMember     `json:"member"`
-	ID     string                 `json:"id"`
-	Data   CommandInteractionData `json:"data"`
+	Type   int                `json:"type"`
+	Token  string             `json:"token"`
+	Member SlashCommandMember `json:"member"`
+	ID     string             `json:"id"`
+	Data   InteractionData    `json:"data"`
 }
 
 type SlashCommandMember struct {
@@ -92,4 +92,23 @@ type MemberUser struct {
 	Avatar       string `json:"avatar"`
 	Dicriminator string `json:"discriminator"`
 	PublicFlags  int    `json:"public_flags"`
+}
+
+type ComponentData struct {
+	CustomId      string `json:"custom_id"`
+	ComponentType int    `json:"component_type"`
+}
+type ComponentInteractionPayload struct {
+	Type    int                         `json:"type"`
+	Token   string                      `json:"token"`
+	ID      string                      `json:"id"`
+	Data    ComponentData               `json:"data"`
+	Member  SlashCommandMember          `json:"member"`
+	Message ComponentInteractionMessage `json:"message"`
+	Context int                         `json:"context"`
+}
+
+type ComponentInteractionMessage struct {
+	Type int    `json:"type"`
+	ID   string `json:"id"`
 }
