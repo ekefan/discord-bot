@@ -5,10 +5,10 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/ekefan/discord-bot/handlers"
 	"github.com/ekefan/discord-bot/util"
@@ -44,6 +44,7 @@ func verifyDiscordSignature(f http.HandlerFunc, c *util.Config) http.HandlerFunc
 		// get message
 		message := append([]byte(timestamp), body...)
 
+		// Decode the keys and verify the signature
 		pubKeyBytes, err := hex.DecodeString(c.PublicKey)
 		if err != nil {
 			http.Error(w, "Server Error", http.StatusInternalServerError)
@@ -96,16 +97,7 @@ func interactionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cmdInteraction util.SlashCommandPayload
-		dataBytes, _ := json.Marshal(reqPayload)
-		err := json.Unmarshal(dataBytes, &cmdInteraction)
-		if err != nil {
-			http.Error(w, "Server Error", http.StatusInternalServerError)
-			slog.Error("could not assert the type of the data from discord interaction")
-			return
-		}
-
-	if cmdInteraction.Type == PING {
+	if reqPayload["type"].(float64) == PING {
 		resp := Resp{
 			Type: PONG,
 		}
@@ -119,10 +111,16 @@ func interactionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cmdInteraction.Type == APPLICATION_COMMMAND {
-		fmt.Println("reached here", cmdInteraction.Data)
+	if reqPayload["type"].(float64) == APPLICATION_COMMMAND {
+		var cmdInteraction util.SlashCommandPayload
+		dataBytes, _ := json.Marshal(reqPayload)
+		err := json.Unmarshal(dataBytes, &cmdInteraction)
+		if err != nil {
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			slog.Error("could not assert the type of the data from discord interaction")
+			return
+		}
 		if cmdInteraction.Data.Name == util.TestCmd {
-			fmt.Println("reached here")
 			handlers.HandleTestCmd(w)
 		}
 
@@ -130,5 +128,23 @@ func interactionsHandler(w http.ResponseWriter, r *http.Request) {
 			handlers.HandleChanllengeCmd(w, cmdInteraction)
 		}
 		return
+	}
+	if reqPayload["type"].(float64) == MESSAGE_COMPONENT {
+		var cmpInteraction util.ComponentInteractionPayload
+		dataBytes, _ := json.Marshal(reqPayload)
+		err := json.Unmarshal(dataBytes, &cmpInteraction)
+		if err != nil {
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			slog.Error("could not assert the type of the data from discord interaction")
+			return
+		}
+		if strings.HasPrefix(cmpInteraction.Data.CustomId, "accept_button_") {
+			handlers.HandleAcceptComponentInteraction(w, cmpInteraction)
+			return
+		}
+		if strings.HasPrefix(cmpInteraction.Data.CustomId, "select_choice_") {
+			handlers.HandleChoiceSelectionInteraction(w, cmpInteraction)
+			return
+		}
 	}
 }
